@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claim Timer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: Arial, sans-serif;
+            color: white;
+            z-index: 9999;
+            display: none;
+        }
+        #timer {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 5px; /* More squared corners */
+            font-size: 18px;
+            color: #FFFFFF;
+        }
+        #time {
+            color: #00FF00;
+        }
+    </style>
+</head>
+<body>
+    <div id="timer">Claim ends in: <span id="time">10:00</span></div>
+
+    <script>
+        window.addEventListener('message', function(event) {
+            if (event.data.action === 'updateTimer') {
+                document.body.style.display = 'block';
+                document.getElementById('time').innerText = event.data.time;
+            } else if (event.data.action === 'hideTimer') {
+                document.body.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
