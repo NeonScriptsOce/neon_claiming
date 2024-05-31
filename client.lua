@@ -26,11 +26,6 @@ RegisterNetEvent('neon_claiming:startClaim', function(coords, pedModel)
         SetEntityInvincible(claimPed, true)
         SetBlockingOfNonTemporaryEvents(claimPed, true)
 
-        -- Create the blip zone
-        claimBlip = AddBlipForRadius(coords.x, coords.y, coords.z, Config.ClaimZoneRadius * 2.0)
-        SetBlipColour(claimBlip, 1) -- Red color
-        SetBlipAlpha(claimBlip, 128) -- Transparency
-
         -- Notify players and start the timer
         if isAllowedToClaim() then
             showTimerUI = true
@@ -39,6 +34,13 @@ RegisterNetEvent('neon_claiming:startClaim', function(coords, pedModel)
                 action = 'updateTimer',
                 time = string.format("%02d:%02d", math.floor(claimTimer / 60), claimTimer % 60)
             })
+        end
+
+        -- Create the blip zone for allowed players
+        if isAllowedToClaim() then
+            claimBlip = AddBlipForRadius(coords.x, coords.y, coords.z, (Config.ClaimZoneRadius or 0) * 2.0)
+            SetBlipColour(claimBlip, 1) -- Red color
+            SetBlipAlpha(claimBlip, 128) -- Transparency
         end
 
         Citizen.CreateThread(function()
@@ -67,8 +69,14 @@ end)
 
 function StopClaim()
     isClaiming = false
-    DeleteEntity(claimPed)
-    RemoveBlip(claimBlip)
+    if claimPed then
+        DeleteEntity(claimPed)
+        claimPed = nil
+    end
+    if claimBlip then
+        RemoveBlip(claimBlip)
+        claimBlip = nil
+    end
     showTimerUI = false
     TriggerServerEvent('neon_claiming:notifyAll', "The claim has been stopped!")
     SendNUIMessage({ action = 'hideTimer' })
@@ -76,17 +84,14 @@ end
 
 function isAllowedToClaim()
     local PlayerData = QBCore.Functions.GetPlayerData()
-    local job = PlayerData.job.name
-    local gang = PlayerData.gang.name
+    local gang = PlayerData.gang and PlayerData.gang.name or nil
 
-    if claimedBy and (job == claimedBy or gang == claimedBy) then
+    if claimedBy and claimedBy ~= '' and gang == claimedBy then
         return false
     end
 
-    for _, allowedJob in ipairs(Config.AllowedJobs) do
-        if job == allowedJob then
-            return true
-        end
+    if not gang then
+        return false
     end
 
     for _, allowedGang in ipairs(Config.AllowedGangs) do
@@ -108,9 +113,9 @@ Citizen.CreateThread(function()
             local pedCoords = GetEntityCoords(claimPed)
             local distance = #(playerCoords - pedCoords)
 
-            if distance < Config.ClaimRadius then
+            if Config.ClaimRadius and distance < Config.ClaimRadius then
                 if isAllowedToClaim() then
-                    QBCore.Functions.DrawText3D(pedCoords.x, pedCoords.y, pedCoords.z, "[E] Claim Zone") -- Centered text
+                    DrawText3D(pedCoords.x, pedCoords.y, pedCoords.z, "[E] Claim Zone") -- Centered text
                     if IsControlJustReleased(0, 38) then -- E key
                         TriggerServerEvent('neon_claiming:claimZone')
                     end
@@ -120,17 +125,19 @@ Citizen.CreateThread(function()
     end
 end)
 
-function drawText(x, y, scale, text)
+function DrawText3D(x, y, z, text)
+    local onScreen, _x, _y = World3dToScreen2d(x, y, z)
+    local px, py, pz = table.unpack(GetGameplayCamCoords())
+    SetTextScale(0.35, 0.35)
     SetTextFont(4)
     SetTextProportional(1)
-    SetTextScale(scale, scale)
-    SetTextColour(255, 255, 255, 255)
-    SetTextDropShadow(0, 0, 0, 0, 255)
-    SetTextEdge(1, 0, 0, 0, 255)
-    SetTextOutline()
+    SetTextColour(255, 255, 255, 215)
     SetTextEntry("STRING")
+    SetTextCentre(1)
     AddTextComponentString(text)
-    DrawText(x, y)
+    DrawText(_x, _y)
+    local factor = (string.len(text)) / 370
+    DrawRect(_x, _y + 0.0125, 0.015 + factor, 0.03, 41, 11, 41, 68)
 end
 
 RegisterNetEvent('neon_claiming:notifyClaim', function(claimedBy)
@@ -139,7 +146,7 @@ RegisterNetEvent('neon_claiming:notifyClaim', function(claimedBy)
         TriggerEvent('chat:addMessage', {
             color = {255, 0, 0},
             multiline = true,
-            args = {"Claiming", claimedBy .. " has claimed the zone!"}
+            args = {"Claiming: ", claimedBy .. " has claimed the zone!"}
         })
     end
 end)
@@ -149,7 +156,7 @@ RegisterNetEvent('neon_claiming:notify', function(message)
         TriggerEvent('chat:addMessage', {
             color = {255, 0, 0},
             multiline = true,
-            args = {"Claiming", message}
+            args = {"Claiming: ", message}
         })
     end
 end)

@@ -3,7 +3,7 @@ game 'gta5'
 
 author 'Neon Scripts'
 description 'Neon Claiming Script - QBCore'
-version '1.0.0'
+version '1.0.1'
 
 shared_scripts {
     'config.lua'

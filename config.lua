@@ -1,11 +1,20 @@
 Config = {}
 
-Config.ClaimZoneRadius = 100 -- Radius of the claim zone
-Config.ClaimDuration = 30 -- Duration of the claim in seconds (10 minutes)
-Config.PedModel = 's_m_y_cop_01' -- Default ped model
+-- Duration of the claim in seconds
+Config.ClaimDuration = 30
 
--- Allowed jobs and gangs to see and interact with the claim
-Config.AllowedJobs = {'police', 'ambulance'}
-Config.AllowedGangs = {'ballas', 'vagos'}
+-- Radius of the claim zone in meters
+Config.ClaimZoneRadius = 100.0
 
-Config.ClaimRadius = 0.8 -- Radius within which the player can claim the ped
+-- Radius within which the player can claim the ped
+Config.ClaimRadius = 0.8
+
+-- Allowed gangs that can interact with the claim zone
+Config.AllowedGangs = {
+    'gang1',
+    'gang2',
+    -- Add more gangs here
+}
+
+-- Model of the ped to spawn at the claim location
+Config.PedModel = 's_m_m_security_01'

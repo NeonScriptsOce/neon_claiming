@@ -23,11 +23,19 @@ RegisterNetEvent('neon_claiming:claimZone', function()
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     if Player then
-        local job = Player.PlayerData.job.name
-        local gang = Player.PlayerData.gang.name
-        claimedBy = job or gang
-        TriggerClientEvent('neon_claiming:notifyClaim', -1, Player.PlayerData.job.label or Player.PlayerData.gang.label)
-        TriggerClientEvent('QBCore:Notify', src, 'You have claimed the zone!', 'success')
+        local gang = Player.PlayerData.gang and Player.PlayerData.gang.name or nil
+        local gangLabel = Player.PlayerData.gang and Player.PlayerData.gang.label or nil
+        if gang then
+            if claimedBy and claimedBy == gang then
+                TriggerClientEvent('QBCore:Notify', src, 'Your gang has already claimed this zone!', 'error')
+                return
+            end
+            claimedBy = gang
+            TriggerClientEvent('neon_claiming:notifyClaim', -1, gangLabel)
+            TriggerClientEvent('QBCore:Notify', src, 'You have claimed the zone!', 'success')
+        else
+            print("Player has no gang")
+        end
     end
 end)
 
@@ -36,18 +44,13 @@ RegisterNetEvent('neon_claiming:notifyAll', function(message)
     for _, playerId in pairs(players) do
         local Player = QBCore.Functions.GetPlayer(playerId)
         if Player then
-            local job = Player.PlayerData.job.name
-            local gang = Player.PlayerData.gang.name
-            for _, allowedJob in ipairs(Config.AllowedJobs) do
-                if job == allowedJob then
-                    TriggerClientEvent('neon_claiming:notify', playerId, message)
-                    break
-                end
-            end
-            for _, allowedGang in ipairs(Config.AllowedGangs) do
-                if gang == allowedGang then
-                    TriggerClientEvent('neon_claiming:notify', playerId, message)
-                    break
+            local gang = Player.PlayerData.gang and Player.PlayerData.gang.name or nil
+            if gang then
+                for _, allowedGang in ipairs(Config.AllowedGangs) do
+                    if gang == allowedGang then
+                        TriggerClientEvent('neon_claiming:notify', playerId, message)
+                        break
+                    end
                 end
             end
         end
