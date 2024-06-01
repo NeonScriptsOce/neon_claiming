@@ -6,8 +6,9 @@ local claimBlip = nil
 local lastClaimedBy = nil
 local claimedBy = nil
 local showTimerUI = false
+local textUIDisplayed = false
 
-RegisterNetEvent('neon_claiming:startClaim', function(coords, pedModel)
+RegisterNetEvent('neon_claiming:startClaim', function(coords)
     if not isClaiming then
         isClaiming = true
         claimTimer = Config.ClaimDuration
@@ -16,7 +17,7 @@ RegisterNetEvent('neon_claiming:startClaim', function(coords, pedModel)
         local pedSpawnHeight = coords.z - 1.0
 
         -- Spawn the ped
-        local model = GetHashKey(pedModel)
+        local model = GetHashKey(Config.PedModel)
         RequestModel(model)
         while not HasModelLoaded(model) do
             Wait(1)
@@ -25,6 +26,11 @@ RegisterNetEvent('neon_claiming:startClaim', function(coords, pedModel)
         FreezeEntityPosition(claimPed, true)
         SetEntityInvincible(claimPed, true)
         SetBlockingOfNonTemporaryEvents(claimPed, true)
+
+        -- Add interaction based on config
+        if Config.Interaction == 'target' then
+            addTargetInteraction()
+        end
 
         -- Notify players and start the timer
         if isAllowedToClaim() then
@@ -55,7 +61,7 @@ RegisterNetEvent('neon_claiming:startClaim', function(coords, pedModel)
                 end
             end
             if claimTimer <= 0 then
-                StopClaim()
+                StopClaim(true)
             end
         end)
     end
@@ -63,11 +69,11 @@ end)
 
 RegisterNetEvent('neon_claiming:stopClaim', function()
     if isClaiming then
-        StopClaim()
+        StopClaim(false)
     end
 end)
 
-function StopClaim()
+function StopClaim(showWinner)
     isClaiming = false
     if claimPed then
         DeleteEntity(claimPed)
@@ -78,8 +84,22 @@ function StopClaim()
         claimBlip = nil
     end
     showTimerUI = false
-    TriggerServerEvent('neon_claiming:notifyAll', "The claim has been stopped!")
     SendNUIMessage({ action = 'hideTimer' })
+    
+    if Config.Interaction == 'target' then
+        removeTargetInteraction()
+    end
+
+    if Config.Interaction == 'ox' then
+        lib.hideTextUI()
+        textUIDisplayed = false
+    end
+
+    if showWinner and lastClaimedBy then
+        TriggerServerEvent('neon_claiming:notifyAll', lastClaimedBy .. " has won the claim!")
+    else
+        TriggerServerEvent('neon_claiming:notifyAll', "The claim has been stopped!")
+    end
 end
 
 function isAllowedToClaim()
@@ -103,6 +123,18 @@ function isAllowedToClaim()
     return false
 end
 
+function isPlayerDead()
+    if Config.Ambulance == 'wasabi' then
+        return exports['wasabi_ambulance']:isPlayerDead()
+    elseif Config.Ambulance == 'qb' then
+        local PlayerData = QBCore.Functions.GetPlayerData()
+        return PlayerData.metadata.isdead or PlayerData.metadata.inlaststand
+    else
+        -- Add other ambulance script checks here if needed
+        return false
+    end
+end
+
 Citizen.CreateThread(function()
     while true do
         Wait(0)
@@ -115,10 +147,36 @@ Citizen.CreateThread(function()
 
             if Config.ClaimRadius and distance < Config.ClaimRadius then
                 if isAllowedToClaim() then
-                    DrawText3D(pedCoords.x, pedCoords.y, pedCoords.z, "[E] Claim Zone") -- Centered text
-                    if IsControlJustReleased(0, 38) then -- E key
-                        TriggerServerEvent('neon_claiming:claimZone')
+                    if Config.Interaction == 'drawtext' then
+                        DrawText3D(pedCoords.x, pedCoords.y, pedCoords.z, "[E] Claim Zone")
+                        if IsControlJustReleased(0, 38) then -- E key
+                            if isPlayerDead() then
+                                QBCore.Functions.Notify("You cannot claim while dead!", "error")
+                            else
+                                TriggerServerEvent('neon_claiming:claimZone')
+                            end
+                        end
+                    elseif Config.Interaction == 'ox' then
+                        if not textUIDisplayed then
+                            lib.showTextUI('[E] Claim Zone', {
+                                position = 'right-center',
+                                icon = 'fas fa-flag'
+                            })
+                            textUIDisplayed = true
+                        end
+                        if IsControlJustReleased(0, 38) then -- E key
+                            if isPlayerDead() then
+                                QBCore.Functions.Notify("You cannot claim while dead!", "error")
+                            else
+                                TriggerServerEvent('neon_claiming:claimZone')
+                            end
+                        end
                     end
+                end
+            else
+                if Config.Interaction == 'ox' and textUIDisplayed then
+                    lib.hideTextUI()
+                    textUIDisplayed = false
                 end
             end
         end
@@ -140,6 +198,47 @@ function DrawText3D(x, y, z, text)
     DrawRect(_x, _y + 0.0125, 0.015 + factor, 0.03, 41, 11, 41, 68)
 end
 
+function addTargetInteraction()
+    if Config.Target == 'ox_target' then
+        exports.ox_target:addLocalEntity(claimPed, {
+            {
+                name = 'claim_zone',
+                icon = 'fas fa-flag',
+                label = 'Claim Zone',
+                canInteract = function(entity, distance, data)
+                    return isAllowedToClaim() and not isPlayerDead()
+                end,
+                onSelect = function(data)
+                    TriggerServerEvent('neon_claiming:claimZone')
+                end
+            }
+        })
+    elseif Config.Target == 'qb-target' then
+        exports['qb-target']:AddTargetEntity(claimPed, {
+            options = {
+                {
+                    type = 'client',
+                    event = 'neon_claiming:claimZone',
+                    icon = 'fas fa-flag',
+                    label = 'Claim Zone',
+                    canInteract = function()
+                        return isAllowedToClaim() and not isPlayerDead()
+                    end
+                }
+            },
+            distance = Config.ClaimRadius
+        })
+    end
+end
+
+function removeTargetInteraction()
+    if Config.Target == 'ox_target' then
+        exports.ox_target:removeLocalEntity(claimPed, 'claim_zone')
+    elseif Config.Target == 'qb-target' then
+        exports['qb-target']:RemoveTargetEntity(claimPed)
+    end
+end
+
 RegisterNetEvent('neon_claiming:notifyClaim', function(claimedBy)
     lastClaimedBy = claimedBy
     if isAllowedToClaim() then
@@ -158,5 +257,23 @@ RegisterNetEvent('neon_claiming:notify', function(message)
             multiline = true,
             args = {"Claiming: ", message}
         })
+    end
+end)
+
+RegisterNetEvent('neon_claiming:claimZone', function()
+    if isAllowedToClaim() then
+        if isPlayerDead() then
+            QBCore.Functions.Notify("You cannot claim while dead!", "error")
+        else
+            TriggerServerEvent('neon_claiming:claimZone')
+        end
+    end
+end)
+
+AddEventHandler('onResourceStop', function(resourceName)
+    if GetCurrentResourceName() == resourceName then
+        if Config.Interaction == 'ox' then
+            lib.hideTextUI()
+        end
     end
 end)

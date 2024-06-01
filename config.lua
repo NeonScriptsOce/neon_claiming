@@ -1,13 +1,10 @@
 Config = {}
 
 -- Duration of the claim in seconds
-Config.ClaimDuration = 30
+Config.ClaimDuration = 10
 
 -- Radius of the claim zone in meters
 Config.ClaimZoneRadius = 100.0
-
--- Radius within which the player can claim the ped
-Config.ClaimRadius = 0.8
 
 -- Allowed gangs that can interact with the claim zone
 Config.AllowedGangs = {
@@ -18,3 +15,15 @@ Config.AllowedGangs = {
 
 -- Model of the ped to spawn at the claim location
 Config.PedModel = 's_m_m_security_01'
+
+-- Claim radius
+Config.ClaimRadius = 5.0
+
+-- Ambulance script setting
+Config.Ambulance = 'wasabi' -- options: 'wasabi', 'qb'
+
+-- Interaction method
+Config.Interaction = 'ox' -- options: 'target', 'drawtext', 'ox' (if selected ox it will use ox_lib Text UI)
+
+-- Target system setting
+Config.Target = 'ox_target' -- options: 'ox_target', 'qb-target'

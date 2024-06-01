@@ -3,13 +3,16 @@ game 'gta5'
 
 author 'Neon Scripts'
 description 'Neon Claiming Script - QBCore'
-version '1.0.1'
+version '1.0.2'
+
+lua54 'yes'
 
 shared_scripts {
     'config.lua'
 }
 
 client_scripts {
+    '@ox_lib/init.lua', -- Ensure this line is included to initialize ox_lib
     'client.lua'
 }
 
