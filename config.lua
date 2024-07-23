@@ -1,7 +1,7 @@
 Config = {}
 
 -- Duration of the claim in seconds
-Config.ClaimDuration = 10
+Config.ClaimDuration = 100
 
 -- Radius of the claim zone in meters
 Config.ClaimZoneRadius = 100.0
@@ -9,7 +9,7 @@ Config.ClaimZoneRadius = 100.0
 -- Allowed gangs that can interact with the claim zone
 Config.AllowedGangs = {
     'gang1',
-    'gang2',
+    'gang2'
     -- Add more gangs here
 }
 

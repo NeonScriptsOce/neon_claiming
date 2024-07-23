@@ -21,7 +21,7 @@ The QBcore Claiming Script allows administrators to create claim zones within th
 
 2. **Add the following line** to your `server.cfg`:
     \`\`\`
-    ensure qb-claiming
+    ensure neon_claiming
     \`\`\`
 
 3. **Ensure you have the required dependencies**:
@@ -43,8 +43,8 @@ Config.ClaimZoneRadius = 100.0
 
 -- Allowed gangs that can interact with the claim zone
 Config.AllowedGangs = {
-    'ballas',
-    'vagos',
+    'gang1',
+    'gang2',
     -- Add more gangs here
 }
 

@@ -3,7 +3,7 @@ game 'gta5'
 
 author 'Neon Scripts'
 description 'Neon Claiming Script - QBCore'
-version '1.0.2'
+version '1.0.3'
 
 lua54 'yes'
 
